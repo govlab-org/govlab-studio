@@ -1,0 +1,21 @@
+.lineNumbers {
+    font-variant-numeric: tabular-nums;
+    font-family: "Droid Sans Mono", "monospace", monospace, "Droid Sans Fallback";
+    font-weight: normal;
+    box-sizing: border-box;
+    cursor: default;
+    letter-spacing: 0px;
+    width: 45px;
+    text-align: right;
+    color: #858585;
+}
+
+.lineNumbers span {
+    font-size: 15px;
+    vertical-align: middle;
+    display: inline;
+}
+
+.textEditorBlock {
+    font-family: Georgia, 'Times New Roman', Times, serif;
+}
