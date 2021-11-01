@@ -11,3 +11,8 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* Override (disable) the Monaco editor highlighting of ther current line number. */
+.monaco-editor.vs-dark .line-numbers.active-line-number {
+  color: #858585 !important;
+}
