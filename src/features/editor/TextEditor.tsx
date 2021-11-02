@@ -24,7 +24,6 @@ class GutterLine {
 const TextEditor = (props: TextEditorProps) => {
   const fileContent = useAppSelector(selectFileContent);
   const cell: CatalaCell | undefined = fileContent?.[props.cellIndex];
-  console.log("cell", props.cellIndex, cell);
   const [editorState, setEditorState] = React.useState(
     EditorState.createWithContent(convertFromRaw({
       blocks: cell?.text?.blocks ?? [],
@@ -70,8 +69,13 @@ const TextEditor = (props: TextEditorProps) => {
 
   React.useEffect(() => {
     updateGutterlines(editorState);
-  }, [editorState]);
 
+    // If the font family is changed during development, hot reloading will not
+    // trigger a call to updateGutterlines(). To fix this we listen to the web
+    // fonts ready promise.
+    document.fonts.ready.then(() => updateGutterlines(editorState));
+  }, [editorState]);
+  
   const handleChange = (e: EditorState) => {
     setEditorState(e);
 
@@ -95,9 +99,9 @@ const TextEditor = (props: TextEditorProps) => {
             lineHeight: line.height + "px",
             marginBottom: line.marginBottom + "px",
           }}>
-          <span style={{ width: 42 }}>
+          <div>
             {props.lineNumberOffset + i + 1}
-          </span>
+          </div>
         </div>
       )}
       </div>

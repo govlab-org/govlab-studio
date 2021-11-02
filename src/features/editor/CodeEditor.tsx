@@ -124,6 +124,7 @@ const CodeEditor = (props: CodeEditorProps) => {
         theme="vs-dark"
         options={{
           fontSize: 15,
+          fontFamily: "Roboto Mono, sans-serif",
           minimap: {enabled: false},
           overviewRulerLanes: 0,
           lineNumbers: (lineNumber) => (props.lineNumberOffset + lineNumber).toString(),
