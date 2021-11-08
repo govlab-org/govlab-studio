@@ -90,7 +90,9 @@ const TextEditor = (props: Props) => {
         return <h5 {...attributes}>{children}</h5>;  
       case 'heading_six':
         return <h6 {...attributes}>{children}</h6>;  
-        default:
+      case 'block_quote':
+        return <blockquote {...attributes}>{children}</blockquote>;  
+      default:
         return <p {...attributes}>{children}</p>;
     }
   }, []);
