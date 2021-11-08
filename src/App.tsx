@@ -1,8 +1,8 @@
 import './App.css';
 import { AppBar, Toolbar, Typography } from '@mui/material';
 import { Box } from '@mui/system';
-import { TextEditor } from './features/editor/TextEditor'
-import { CodeEditor } from './features/editor/CodeEditor'
+import TextEditor from './features/editor/TextEditor'
+import CodeEditor from './features/editor/CodeEditor'
 import { FileOpenButton } from './features/file/FileOpenButton'
 import { useAppSelector } from './app/hooks';
 import { CatalaCell, selectFileContent } from './features/file/fileSlice';

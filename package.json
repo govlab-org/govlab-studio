@@ -3,44 +3,43 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@craco/craco": "^6.4.0",
+    "@accordproject/markdown-slate": "^0.14.1",
     "@emotion/react": "^11.5.0",
     "@emotion/styled": "^11.3.0",
     "@monaco-editor/react": "^4.3.1",
     "@mui/icons-material": "^5.0.5",
     "@mui/material": "^5.0.6",
+    "@mui/system": "^5.0.6",
     "@reduxjs/toolkit": "^1.6.2",
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.5.0",
     "@testing-library/user-event": "^7.2.1",
     "@types/css-font-loading-module": "0.0.6",
-    "@types/draft-js": "^0.11.6",
     "@types/jest": "^24.9.1",
-    "@types/markdown-draft-js": "^2.2.4",
     "@types/marked": "^3.0.2",
     "@types/node": "^12.20.36",
     "@types/react": "^16.14.20",
     "@types/react-dom": "^16.9.14",
     "@types/react-redux": "^7.1.20",
-    "babel-plugin-transform-typescript-metadata": "^0.3.2",
-    "class-transformer": "^0.4.0",
-    "draft-js": "^0.11.7",
-    "markdown-draft-js": "^2.4.0",
     "monaco-editor": "^0.29.1",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-redux": "^7.2.6",
     "react-scripts": "4.0.3",
-    "reflect-metadata": "^0.1.13",
+    "remark-parse": "^10.0.0",
+    "remark-slate": "^1.8.0",
+    "slate": "^0.66.5",
+    "slate-react": "^0.69.0",
     "typeface-roboto-mono": "^1.1.13",
     "typeface-roboto-slab": "^1.1.13",
-    "typescript": "^4.1.6"
+    "typescript": "^4.1.6",
+    "unified": "^10.1.0"
   },
   "scripts": {
-    "start": "craco start",
-    "build": "craco build",
-    "test": "craco test",
-    "eject": "craco eject"
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
   },
   "eslintConfig": {
     "extends": "react-app"
@@ -57,6 +56,5 @@
       "last 1 safari version"
     ]
   },
-  "devDependencies": {},
   "homepage": "."
 }

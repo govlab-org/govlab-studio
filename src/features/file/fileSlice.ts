@@ -1,11 +1,9 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit"
-import { classToPlain, plainToClass, Type } from "class-transformer";
-import { RawDraftContentBlock } from "draft-js";
-import { markdownToDraft } from "markdown-draft-js";
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit"
 import { RootState } from "../../app/store";
-
-// requited to use the decorators such as @Type
-import 'reflect-metadata';
+import markdown from 'remark-parse';
+import slate from 'remark-slate';
+import { unified } from 'unified';
+import { Descendant, Element, Text } from "slate";
 
 export enum FileOpenStatus {
   LOADING,
@@ -13,12 +11,27 @@ export enum FileOpenStatus {
   ERROR,
 }
 
-export interface FileOpenButtonState {
+export interface FileState {
   status: FileOpenStatus | null,
-  content: Array<Object> | null;
+  content: Array<CatalaCell> | null;
 }
 
-const initialState: FileOpenButtonState = {
+export interface CatalaCell {
+  text: CatalaCellText;
+  code: CatalaCellCode;
+}
+
+export interface CatalaCellText {
+  content: Descendant[];
+  numLines: number;
+}
+
+export interface CatalaCellCode {
+  code: string;
+  numLines: number;
+}
+
+const initialState: FileState = {
   status: null,
   content: [],
 }
@@ -37,62 +50,20 @@ export const readFileAsync = createAsyncThunk(
   })
 );
 
+const computeTextNumLines = (nodes: Descendant[]) => {
+  let numLines = 0;
+  for (let i = 0; i < nodes.length; ++i) {
+    let el = nodes[i] as Element;
 
-export class CatalaCellText {
-  private _blocks: RawDraftContentBlock[] = [];
-  private _numLines: number = 0;
-
-  get blocks() {
-    return this._blocks;
-  }
-
-  set blocks(blocks: RawDraftContentBlock[]) {
-    this._blocks = blocks;
-    this._numLines = this.computeNumLines();
-  }
-
-  get numLines() {
-    return this._numLines;
-  }
-  
-  private computeNumLines() {
-    let numLines = 0;
-    for (let i = 0; i < this._blocks.length; ++i) {
-      const block = this._blocks[i];
-
-      numLines += (block.text.match(/\n/gm)?.length ?? 0) + 1
+    for (let j = 0; j < el.children.length; ++j) {
+      numLines += ((el.children[j] as Text).text.match(/\n/gm)?.length ?? 0) + 1;
     }
-    return numLines;
   }
-
-  public toObject() {
-    return Object.assign({}, this);
-  }
+  return numLines;
 }
 
-export class CatalaCellCode {
-  private _code: string = "";
-  private _numLines: number = 1;
-
-  get code() {
-    return this._code;
-  }
-
-  set code(code: string) {
-    this._code = code;
-    this._numLines = (code.match(/\n/gm)?.length ?? 0) + 1;
-  }
-
-  get numLines() {
-    return this._numLines;
-  }
-}
-
-export class CatalaCell {
-  @Type(() => CatalaCellText)
-  text: CatalaCellText | undefined;
-  @Type(() => CatalaCellCode)
-  code: CatalaCellCode | undefined;
+const computeCodeNumLines = (code: string) => {
+  return (code.match(/\n/gm)?.length ?? 0) + 1;
 }
 
 const stripCodeBlock = (block: string) => {
@@ -102,34 +73,42 @@ const stripCodeBlock = (block: string) => {
 }
 
 const parseCatalaCode = (code: string) => {
-  const parsed = markdownToDraft(code, { preserveNewlines: true });
-  let cells: Array<CatalaCell> = [];
+  // const slateTransformer = new SlateTransformer();
+  // const parsed = slateTransformer.fromMarkdown(code);
+  const parsed = unified()
+    .use(markdown)
+    .use(slate)
+    .processSync(code)
+    // ! FIXME: use an interface
+    .result as any[];
+  const cells: Array<CatalaCell> = [];
 
   let i = 0;
-  while (i < parsed.blocks.length) {
-    let block = parsed.blocks[i];
+  while (i < parsed.length) {
+    let child = parsed[i];
 
     let textBlocks = [];
-    while (block && block.type !== "code-block") {
-      textBlocks.push(block);
-      block = parsed.blocks[++i];
+    while (child && child["type"] !== "code_block") {
+      textBlocks.push(child);
+      child = parsed[++i];
     }
 
     let code = "";
-    while (block && block.type === "code-block") {
-      code += stripCodeBlock(block.text);
-      block = parsed.blocks[++i];
+    while (child && child["type"] === "code_block") {
+      code += stripCodeBlock(child["children"][0]["text"]);
+      child = parsed[++i];
     }
 
-    const cellText = new CatalaCellText();
-    cellText.blocks = textBlocks;
-    const cellCode = new CatalaCellCode();
-    cellCode.code = code;
-    const cell = new CatalaCell();
-    cell.text = cellText;
-    cell.code = cellCode;
-
-    cells.push(cell);
+    cells.push({
+      text: {
+        content: textBlocks,
+        numLines: computeTextNumLines(textBlocks),
+      } as CatalaCellText,
+      code: {
+        code,
+        numLines: computeCodeNumLines(code),
+      } as CatalaCellCode
+    } as CatalaCell);
   }
 
   return cells;
@@ -139,6 +118,14 @@ export const fileSlice = createSlice({
   name: 'FileOpenButton',
   initialState,
   reducers: {
+    setTextValue: (state, action: PayloadAction<[number, Descendant[]]>) => {
+      const value = action.payload[1];
+
+      (state.content![action.payload[0]] as CatalaCell).text = {
+        content: value,
+        numLines: computeTextNumLines(value),
+      };
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -149,7 +136,7 @@ export const fileSlice = createSlice({
       .addCase(readFileAsync.fulfilled, (state, action) => {
         // ! FIXME: handle parser errors
         state.status = FileOpenStatus.LOADED;
-        state.content = parseCatalaCode(action.payload).map((cell: CatalaCell) => classToPlain(cell));
+        state.content = parseCatalaCode(action.payload);
       })
       .addCase(readFileAsync.rejected, (state) => {
         state.status = FileOpenStatus.ERROR;
@@ -157,6 +144,8 @@ export const fileSlice = createSlice({
   },
 });
 
-export const selectFileContent = (state: RootState) => state.file.content?.map((v) => plainToClass(CatalaCell, v));
+export const { setTextValue } = fileSlice.actions;
+
+export const selectFileContent = (state: RootState) => state.file.content?.map((v) => v as CatalaCell);
 
 export default fileSlice.reducer;

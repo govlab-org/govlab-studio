@@ -1,15 +1,27 @@
 import { useEffect, useState } from "react";
 import Editor, { useMonaco } from "@monaco-editor/react";
 import { editor } from "monaco-editor";
-import { useAppSelector } from "../../app/hooks";
-import { CatalaCell, selectFileContent } from "../file/fileSlice";
+import { CatalaCell } from "../file/fileSlice";
+import { connect, ConnectedProps } from "react-redux";
+import { RootState } from "../../app/store";
 
-interface CodeEditorProps {
-  cellIndex: number,
-  lineNumberOffset: number,
+const mapState = (state: RootState) => ({
+  fileContent: state.file.content,
+});
+
+const mapDispatch = {
+};
+
+const connector = connect(mapState, mapDispatch);
+
+type PropsFromRedux = ConnectedProps<typeof connector>;
+
+type Props = PropsFromRedux & {
+  cellIndex: number;
+  lineNumberOffset: number;
 }
 
-const CodeEditor = (props: CodeEditorProps) => {
+const CodeEditor = (props: Props) => {
   const minHeight = 0;
   const [height, setHeight] = useState(minHeight);
 
@@ -112,8 +124,7 @@ const CodeEditor = (props: CodeEditorProps) => {
     setHeight(contentHeight);
   };
 
-  const fileContent = useAppSelector(selectFileContent);
-  const cell: CatalaCell | undefined = fileContent?.[props.cellIndex];
+  const cell: CatalaCell = props.fileContent![props.cellIndex];
 
   return (
     <div style={{ marginTop: 20, marginBottom: 20 }}>
@@ -148,5 +159,4 @@ const CodeEditor = (props: CodeEditorProps) => {
   );
 }
   
-export { CodeEditor }
-  
+export default connector(CodeEditor);
