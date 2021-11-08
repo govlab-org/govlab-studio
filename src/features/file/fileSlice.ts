@@ -59,7 +59,13 @@ const computeTextNumLines = (nodes: Descendant[]) => {
     let el = nodes[i] as Element;
 
     for (let j = 0; j < el.children.length; ++j) {
-      numLines += ((el.children[j] as Text).text.match(/\n/gm)?.length ?? 0) + 1;
+      let child = el.children[j];
+
+      if ((child as Object).hasOwnProperty("text")) {
+        numLines += ((child as Text).text.match(/\n/gm)?.length ?? 0) + 1;
+      } else {
+        numLines += computeTextNumLines([child]);
+      }
     }
   }
   return numLines;
