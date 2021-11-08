@@ -14,13 +14,7 @@
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.5.0",
     "@testing-library/user-event": "^7.2.1",
-    "@types/css-font-loading-module": "0.0.6",
-    "@types/jest": "^24.9.1",
-    "@types/marked": "^3.0.2",
-    "@types/node": "^12.20.36",
-    "@types/react": "^16.14.20",
-    "@types/react-dom": "^16.9.14",
-    "@types/react-redux": "^7.1.20",
+    "file-saver": "^2.0.5",
     "monaco-editor": "^0.29.1",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
@@ -56,5 +50,15 @@
       "last 1 safari version"
     ]
   },
-  "homepage": "."
+  "homepage": ".",
+  "devDependencies": {
+    "@types/css-font-loading-module": "0.0.6",
+    "@types/file-saver": "^2.0.3",
+    "@types/jest": "^24.9.1",
+    "@types/marked": "^3.0.2",
+    "@types/node": "^12.20.36",
+    "@types/react": "^16.14.20",
+    "@types/react-dom": "^16.9.14",
+    "@types/react-redux": "^7.1.20"
+  }
 }

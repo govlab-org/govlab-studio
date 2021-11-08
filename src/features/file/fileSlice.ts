@@ -5,15 +5,17 @@ import slate from 'remark-slate';
 import { unified } from 'unified';
 import { Descendant, Element, Text } from "slate";
 
-export enum FileOpenStatus {
+export enum FileStatus {
   LOADING,
   LOADED,
+  CHANGED,
   ERROR,
 }
 
 export interface FileState {
-  status: FileOpenStatus | null,
-  content: Array<CatalaCell> | null;
+  status: FileStatus | undefined,
+  name: string | undefined,
+  content: Array<CatalaCell>;
 }
 
 export interface CatalaCell {
@@ -32,16 +34,17 @@ export interface CatalaCellCode {
 }
 
 const initialState: FileState = {
-  status: null,
+  status: undefined,
+  name: "",
   content: [],
 }
 
 export const readFileAsync = createAsyncThunk(
-  'fileOpenButton/readFile',
-  async (file: File) => new Promise<string>((resolve, reject) => {
+  'file/readFile',
+  async (file: File) => new Promise<[string, string]>((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = function(e: any) {
-      resolve(e.target.result);
+      resolve([file.name, e.target.result]);
     };
     reader.onerror = function(e: any) {
       reject(e);
@@ -115,11 +118,13 @@ const parseCatalaCode = (code: string) => {
 }
 
 export const fileSlice = createSlice({
-  name: 'FileOpenButton',
+  name: 'file',
   initialState,
   reducers: {
     setTextValue: (state, action: PayloadAction<[number, Descendant[]]>) => {
       const value = action.payload[1];
+
+      state.status = FileStatus.CHANGED;
 
       (state.content![action.payload[0]] as CatalaCell).text = {
         content: value,
@@ -131,20 +136,23 @@ export const fileSlice = createSlice({
     builder
       .addCase(readFileAsync.pending, (state) => {
         state.content = [];
-        state.status = FileOpenStatus.LOADING;
+        state.status = FileStatus.LOADING;
       })
       .addCase(readFileAsync.fulfilled, (state, action) => {
         // ! FIXME: handle parser errors
-        state.status = FileOpenStatus.LOADED;
-        state.content = parseCatalaCode(action.payload);
+        state.status = FileStatus.LOADED;
+        state.name = action.payload[0];
+        state.content = parseCatalaCode(action.payload[1]);
       })
       .addCase(readFileAsync.rejected, (state) => {
-        state.status = FileOpenStatus.ERROR;
+        state.status = FileStatus.ERROR;
       })
   },
 });
 
 export const { setTextValue } = fileSlice.actions;
+
+export const selectFile = (state: RootState) => state.file as FileState;
 
 export const selectFileContent = (state: RootState) => state.file.content?.map((v) => v as CatalaCell);
 

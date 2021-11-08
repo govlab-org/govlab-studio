@@ -131,9 +131,14 @@ const TextEditor = (props: Props) => {
     document.fonts.ready.then(() => setGutterLines(computeGutterLines(editor, value)));
   }, [editor, value]);
 
-  const onChange = (value: Descendant[]) => {
-    dispatch(setTextValue([props.cellIndex, value]));
-  };
+  const onChange = React.useCallback(v => {
+    // Ignore change events related to selections.
+    const ops = editor.operations.filter(op => op && op.type !== 'set_selection');
+    
+    if (ops && Array.isArray(ops) && ops.length > 0) {
+      dispatch(setTextValue([props.cellIndex, v]));
+    }
+  }, [dispatch, editor.operations, props.cellIndex]);
 
   return (
     <div style={{ display: 'flex' }}>

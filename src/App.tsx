@@ -3,7 +3,8 @@ import { AppBar, Toolbar, Typography } from '@mui/material';
 import { Box } from '@mui/system';
 import TextEditor from './features/editor/TextEditor'
 import CodeEditor from './features/editor/CodeEditor'
-import { FileOpenButton } from './features/file/FileOpenButton'
+import { OpenFileButton } from './features/file/OpenFileButton'
+import { SaveFileButton } from './features/file/SaveFileButton'
 import { useAppSelector } from './app/hooks';
 import { CatalaCell, selectFileContent } from './features/file/fileSlice';
 
@@ -34,7 +35,8 @@ const App = () => {
           </Typography>
           <Box sx={{ flexGrow: 1 }} />
           <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
-            <FileOpenButton />
+            <SaveFileButton />
+            <OpenFileButton />
           </Box>
         </Toolbar>
       </AppBar>

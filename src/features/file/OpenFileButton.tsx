@@ -1,4 +1,4 @@
-import { UploadFile } from "@mui/icons-material";
+import { Upload } from "@mui/icons-material";
 import { IconButton } from "@mui/material";
 import { ChangeEvent, useRef } from "react";
 import { useAppDispatch } from "../../app/hooks";
@@ -9,10 +9,10 @@ const extensions = [
   ".catala_fr",
 ];
 
-interface FileOpenButtonProps {
+interface Props {
 }
 
-export const FileOpenButton = (props: FileOpenButtonProps) => {
+export const OpenFileButton = (props: Props) => {
   const inputFile = useRef<HTMLInputElement>(null);
   const dispatch = useAppDispatch();
 
@@ -27,7 +27,7 @@ export const FileOpenButton = (props: FileOpenButtonProps) => {
 
   return (
     <IconButton size="large" color="inherit" onClick={() => inputFile.current?.click()}>
-      <UploadFile />
+      <Upload />
       <input
         type='file'
         id='file'
