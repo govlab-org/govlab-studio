@@ -1,9 +1,12 @@
-import { useEffect, useState } from "react";
-import Editor, { useMonaco } from "@monaco-editor/react";
-import { editor } from "monaco-editor";
-import { CatalaCell } from "../file/fileSlice";
+import { CatalaCell, setCodeValue } from "../file/fileSlice";
 import { connect, ConnectedProps } from "react-redux";
 import { RootState } from "../../app/store";
+import { lineNumbers } from "@codemirror/gutter";
+import { useAppDispatch } from "../../app/hooks";
+import CodeMirror from "@uiw/react-codemirror";
+import { EditorState } from "@codemirror/state";
+import { EditorView } from "@codemirror/view";
+import { Catala } from "codemirror-lang-catala";
 
 const mapState = (state: RootState) => ({
   fileContent: state.file.content,
@@ -22,138 +25,50 @@ type Props = PropsFromRedux & {
 }
 
 const CodeEditor = (props: Props) => {
-  const minHeight = 0;
-  const [height, setHeight] = useState(minHeight);
-
-  const monaco = useMonaco();
-  
-  useEffect(() => {
-    if (monaco) {
-      monaco.languages.register({ id: "catala_en" });
-
-      // Register a tokens provider for the language
-      monaco.languages.setMonarchTokensProvider("catala_en", {
-        keywords: [
-          // expression
-          "match",
-          "with", "pattern",
-          "fixed",
-          "by",
-          "decreasing",
-          "increasing",
-          "varies",
-          "with",
-          "we", "have",
-          "in",
-          "such", "that",
-          "exists",
-          "for",
-          "all",
-          "of",
-          "if",
-          "then",
-          "else",
-          "initial",
-
-          // rule
-          "scope",
-          "depends", "on",
-          "declaration",
-          "includes",
-          "collection",
-          "content",
-          "optional",
-          "structure",
-          "enumeration",
-          "context",
-          "rule",
-          "under", "condition",
-          "condition",
-          "data",
-          "consequence",
-          "fulfilled",
-          "equals",
-          "assertion",
-          "definition",
-          "label",
-          "exception",
-        ],
-        typeKeywords: [
-          "integer",
-          "boolean",
-          "date",
-          "duration",
-          "money",
-          "text",
-          "decimal",
-          "number",
-          "sum",
-        ],
-        operators: [
-          "=", ">", "<", "!",
-          "==", "<=", ">=", "!=",
-          "==$", "<=$", ">=$", "!=$",
-          "+", "-", "*", "/",
-          "+$", "-$", "*$", "/$"
-        ],
-        comments: {
-          lineComment: "#",
-        },
-        tokenizer: {
-          root: [
-            { include: "@whitespace" },
-            [/[a-z_$][\w$]*/, {
-              cases: {
-                "@keywords": "keyword",
-                "@default": "identifier"
-              }
-            }],
-          ],
-          whitespace: [
-            [/[ \t\r\n]+/, "white"],
-            [/(^#.*$)/, "comment"],
-          ],
-        }
-      });
-    }
-  }, [monaco]);
-
-  const updateHeight = (editor: editor.IStandaloneCodeEditor) => {
-    const contentHeight = Math.max(minHeight, editor.getContentHeight());
-
-    setHeight(contentHeight);
-  };
-
+  const dispatch = useAppDispatch();
   const cell: CatalaCell = props.fileContent![props.cellIndex];
 
+  let theme = EditorView.theme({
+    "&.cm-editor": {
+      padding: "10px 0 10px 0",
+      fontSize: ".9em",
+      fontFamily: "Roboto Mono, sans-serif",
+    },
+    ".cm-lineNumbers .cm-gutterElement": {
+      minWidth: "45px",
+      paddingRight: "0px",
+      fontSize: "15px",
+      lineHeight: "24px",
+      marginRight: "18px",
+      fontFamily: "Roboto Mono, sans-serif",
+    },
+    /* Disable CodeMirror's active line highlighting. */
+    "& .cm-activeLineGutter, & .cm-activeLine": {
+      backgroundColor: "transparent !important",
+    },
+    /* Disable CodeMirror's focused editor outline. */
+    "&.cm-editor.cm-focused": {
+      outline: "none",
+    },
+  }, {dark: true});
+
+  const extensions = [
+    theme,
+    Catala(),
+    lineNumbers({ formatNumber: (n: number, s: EditorState) =>
+      (n + props.lineNumberOffset).toString()
+    }),
+  ];
+
   return (
-    <div style={{ marginTop: 20, marginBottom: 20 }}>
-      <Editor
-        height={height}
-        language="catala_en"
+    <div style={{ marginTop: 10, marginBottom: 10 }}>
+      <CodeMirror
         value={cell?.code?.code}
-        theme="vs-dark"
-        options={{
-          fontSize: 15,
-          fontFamily: "Roboto Mono, sans-serif",
-          minimap: {enabled: false},
-          overviewRulerLanes: 0,
-          lineNumbers: (lineNumber) => (props.lineNumberOffset + lineNumber).toString(),
-          scrollBeyondLastLine: false,
-          padding: {
-            top: 20,
-            bottom: 20,
-          },
-          scrollbar: {
-            alwaysConsumeMouseWheel: false,
-          },
-          renderLineHighlight: "none",
+        onChange={(value, viewUpdate) => {
+          dispatch(setCodeValue([props.cellIndex, value]));
         }}
-        onMount={(editor) => {
-          editor.onDidContentSizeChange(() => {
-            updateHeight(editor);
-          });
-        }}
+        extensions={extensions}
+        theme="dark"
       />
     </div>
   );

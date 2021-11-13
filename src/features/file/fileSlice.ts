@@ -137,6 +137,16 @@ export const fileSlice = createSlice({
         numLines: computeTextNumLines(value),
       };
     },
+    setCodeValue: (state, action: PayloadAction<[number, string]>) => {
+      const value = action.payload[1];
+
+      state.status = FileStatus.CHANGED;
+
+      (state.content![action.payload[0]] as CatalaCell).code = {
+        code: value,
+        numLines: computeCodeNumLines(value),
+      };
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -156,7 +166,7 @@ export const fileSlice = createSlice({
   },
 });
 
-export const { setTextValue } = fileSlice.actions;
+export const { setTextValue, setCodeValue } = fileSlice.actions;
 
 export const selectFile = (state: RootState) => state.file as FileState;
 

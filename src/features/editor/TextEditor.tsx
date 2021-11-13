@@ -112,12 +112,17 @@ const TextEditor = (props: Props) => {
     // Handle soft breaks (shift + enter)
     if (event.key === 'Enter' && event.shiftKey === true) {
       // Inserting '\n' should be enough, but there is a bug in Firefox:
+      //
       // https://github.com/ianstormtaylor/slate/issues/3911
       //
-      // There is still a problem though: backspace will not remove the extra
-      // zero width whitespace.
+      // Inserting '\n\u2060' instead works, but it causes other issues.
+      // Backspace will not remove the extra zero width whitespace.
+      //
       // https://github.com/ianstormtaylor/slate/issues/3911#issuecomment-963046142
-      editor.insertText('\n\u2060');
+      //
+      // This is a Firefox-only bug and the caret moves to the new line when
+      // typing. So we just ignore the problem for now.
+      editor.insertText('\n');
 
       event.preventDefault();
       event.stopPropagation();
