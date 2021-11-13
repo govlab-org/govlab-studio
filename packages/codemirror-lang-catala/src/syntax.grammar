@@ -1,28 +1,550 @@
 @dialects { catala_en }
 
-@top Program { expression* }
+@top Program { code_item* }
 
 @skip { space | LineComment }
 
-expression {
-  Boolean |
-  Identifier |
-  String |
-  Application { "(" expression* ")" }
+@precedence {
+  unary,
+  times @left,
+  plus @left
 }
 
-Boolean { @specialize[@name=BooleanLiteral]<Identifier, "true" | "false"> }
+code_item {
+  scope Constructor scope_use_condition? colon scope_item+ |
+  declaration struct Constructor colon struct_scope* |
+  declaration scope Constructor colon scope_decl_item+ |
+  declaration enum Constructor colon enum_decl_line+
+}
+
+scope_use_condition {
+  under_condition expression
+}
+
+expression {
+  exists_prefix expression |
+  forall_prefix expression |
+  match primitive_expression with match_arms |
+  if expression then expression else base_expression |
+  logical_expression
+}
+
+exists_prefix {
+  exists_marked Ident in primitive_expression such that
+}
+
+exists_marked {
+  exists
+}
+
+primitive_expression {
+  small_expression |
+  cardinal |
+  struct_or_enum_inject |
+  lsquare expression* semicolon rsquare
+}
+
+small_expression {
+  atomic_expression |
+  small_expression dot (Constructor dot)? Ident
+}
+
+atomic_expression {
+  Ident |
+  literal |
+  lparen expression rparen
+}
+
+literal {
+    num_literal unit_literal? |
+    money_amount |
+    vertical date_int minus date_int minus date_int vertical |
+    true |
+    false
+}
+
+num_literal {
+  int_literal |
+  decimal_literal
+}
+
+unit_literal {
+  percent |
+  year |
+  month |
+  day
+}
+
+date_int {
+  int_literal
+}
+
+struct_or_enum_inject {
+  Constructor (dot Constructor)? enum_inject_content |
+  Constructor struct_inject_content
+}
+
+forall_prefix {
+  for_all_marked Ident in primitive_expression we_have
+}
+
+match_arms {
+  (alt match_arm)*
+}
+
+base_expression {
+  primitive_expression |
+  aggregate |
+  primitive_expression of base_expression |
+  primitive_expression with constructor_binding |
+  primitive_expression in base_expression
+}
+
+logical_expression {
+  compare_expression |
+  logical_unop compare_expression |
+  compare_expression logical_op logical_expression
+}
+
+scope_item {
+  rule |
+  definition |
+  assertion assertion
+}
+
+struct_scope {
+  struct_scope_base (struct_scope_func)?
+}
+
+scope_decl_item {
+  context Ident content typ struct_scope_func? |
+  context Ident scope Constructor |
+  context Ident condition struct_scope_func?
+}
+
+enum_decl_line {
+  alt Constructor enum_decl_line_payload?
+}
+
+enum_inject_content {
+  content small_expression
+}
+
+struct_inject_content {
+  lbracket alt struct_content_field+ alt rbracket
+}
+
+struct_content_field {
+  Ident colon logical_expression
+}
+
+compare_expression {
+  sum_expression+ compare_op
+}
+
+sum_expression {
+  mult_expression |
+  mult_expression !plus sum_op sum_expression |
+  !unary sum_unop sum_expression
+}
+
+mult_expression {
+  base_expression+ !times mult_op
+}
+
+aggregate {
+  aggregate_func for Ident in primitive_expression of base_expression
+}
+
+aggregate_func {
+  content maximum typ_base init primitive_expression
+  | content minimum typ_base init primitive_expression
+  | maximum typ_base init primitive_expression
+  | minimum typ_base init primitive_expression
+  | sum typ_base
+  | cardinal
+  | filter
+  | map
+}
+
+typ_base {
+  Integer |
+  Boolean |
+  Money |
+  Duration |
+  Decimal |
+  Date |
+  Constructor
+}
+
+init {
+  // FIXME
+}
+
+constructor_binding {
+  maybe_qualified_constructor optional_binding
+}
+
+maybe_qualified_constructor {
+  Constructor (dot Constructor)?
+}
+
+optional_binding {
+  // FIXME: ε |
+  of Ident |
+  of maybe_qualified_constructor constructor_binding
+}
+
+mult_op {
+  mult |
+  div |
+  multdec |
+  divdec |
+  multmoney |
+  divmoney |
+  divduration
+}
+
+sum_op {
+  plusduration |
+  minusduration |
+  plusdate |
+  minusdate |
+  plusmoney |
+  minusmoney |
+  plusdec |
+  minusdec |
+  plus |
+  minus |
+  plusplus
+}
+
+sum_unop {
+  minus |
+  minusdec |
+  minusmoney |
+  minusduration
+}
+
+compare_op {
+  lesser |
+  lesser_equal |
+  greater |
+  greater_equal |
+  lesser_dec |
+  lesser_equal_dec |
+  greater_dec |
+  greater_equal_dec |
+  lesser_money |
+  lesser_equal_money |
+  greater_money |
+  greater_equal_money |
+  lesser_date |
+  lesser_equal_date |
+  greater_date |
+  greater_equal_date |
+  lesser_duration |
+  lesser_equal_duration |
+  greater_duration |
+  greater_equal_duration |
+  equal |
+  not_equal
+}
+
+logical_unop {
+  not
+}
+
+logical_op {
+  and |
+  or |
+  xor
+}
+
+for_all_marked {
+  for all
+}
+
+match_arm {
+  wildcard colon logical_expression |
+  constructor_binding colon logical_expression
+}
+
+struct_scope_base {
+  data Ident content typ |
+  condition_pos Ident
+}
+
+typ {
+  typ_base |
+  collection_marked typ
+}
+
+collection_marked {
+  collection
+}
+
+condition_pos {
+  condition
+}
+
+struct_scope_func {
+  depends typ
+}
+
+enum_decl_line_payload {
+  content typ
+}
 
 @tokens {
-  Identifier { $[a-zA-Z_\-0-9]+ }
+  Ident { std.asciiLetter+ }
 
-  String { '"' (!["\\] | "\\" _)* '"' }
+  Integer { std.digit+ }
+
+  Boolean {
+    true |
+    false
+  }
+
+  Money {
+    money_amount "$"
+  }
+
+  Duration {
+    day "day" month "month" year "year"
+  }
+
+  Decimal {
+    Integer dot Integer
+  }
+
+  Date {
+    vertical year "-" month "-" day vertical
+  }
+
+  Constructor { std.asciiUppercase+ std.asciiLetter }
 
   LineComment { "#" ![\n]* }
 
-  space { $[ \t\n\r]+ }
+  true { "true" }
 
-  "(" ")"
+  false { "false" }
+
+  space { std.whitespace+ }
+
+  lparen { "(" }
+
+  rparen { ")" }
+
+  colon { ":" }
+
+  content { "content" }
+
+  lbracket { "{" }
+
+  alt { "--" }
+
+  rbracket { "}" }
+
+  cardinal { "number" "of" }
+
+  lsquare { "[" }
+
+  semicolon { ";" }
+
+  rsquare { "]" }
+
+  int_literal { std.digit }
+
+  decimal_literal { std.digit "." std.digit }
+
+  percent { "%" }
+
+  year { std.digit }
+
+  month { std.digit  }
+
+  day { std.digit  }
+
+  money_amount { std.digit }
+
+  minus { "-" }
+
+  lesser { "<" }
+
+  lesser_equal { "<=" }
+
+  greater { "" }
+
+  greater_equal { "=" }
+
+  lesser_dec { "<." }
+
+  lesser_equal_dec { "<=." }
+
+  greater_dec { "." }
+
+  greater_equal_dec { "=." }
+
+  lesser_money { "<$" }
+
+  lesser_equal_money { "<=$" }
+
+  greater_money { "$" }
+
+  greater_equal_money { "=$" }
+
+  lesser_date { "<@" }
+
+  lesser_equal_date { "<=@" }
+
+  greater_date { "@" }
+
+  greater_equal_date { "=@" }
+
+  lesser_duration { "<^" }
+
+  lesser_equal_duration { "<=^" }
+
+  greater_duration { "^" }
+
+  greater_equal_duration { "=^" }
+
+  equal { "=" }
+
+  not_equal { "!=" }
+
+  maximum { "maximum" }
+
+  minimum { "minimum" }
+
+  sum { "sum" }
+
+  filter { "filter" }
+
+  map { "map" }
+
+  for { "for" }
+
+  in { "in" }
+
+  of { "of" }
+
+  with { "with" "pattern" }
+
+  mult { "*" }
+
+  div { "/" }
+
+  multdec { "/." }
+
+  divdec { "*." }
+
+  multmoney { "*$" }
+
+  divmoney { "/$" }
+
+  divduration { "/^" }
+
+  plusduration { "+^" }
+
+  minusduration { "-^" }
+
+  plusdate { "+@" }
+
+  minusdate { "-@" }
+
+  plusmoney { "+$" }
+
+  minusmoney { "-$" }
+
+  plusdec { "+." }
+
+  minusdec { "-." }
+
+  plus { "+" }
+
+  plusplus { "++" }
+
+  and { "and" }
+
+  or { "or" }
+
+  xor { "xor" }
+
+  not { "not" }
+
+  wildcard { "*" }
+
+  all { "all" }
+
+  exists { "exists" }
+
+  we_have { "we" space "have"  }
+
+  such { "such" }
+
+  that { "that" }
+
+  match { "match" }
+
+  if { "if" }
+
+  then { "then" }
+
+  else { "else" }
+
+  under_condition { "under" condition }
+
+  consequence { "consequence" }
+
+  filled { "fulfilled" }
+
+  rule { "rule" }
+
+  label { "label" }
+
+  exception { "exception" }
+
+  definition { "definition" }
+
+  defined_as { "defined" "as" }
+
+  increasing { "increasing" }
+
+  decreasing { "decreasing" }
+
+  fixed { "fixed" }
+
+  by { "by" }
+
+  varies { "varies" }
+
+  assertion { "assertion" }
+
+  condition { "condition" }
+
+  data { "data" }
+
+  depends { "depends" }
+
+  context { "context" }
+
+  scope { "scope" }
+
+  declaration { "declaration" }
+
+  struct { "structure" }
+
+  enum { "enumeration" }
+
+  collection { "collection" }
+
+  vertical { "|" }
+
+  with_v { "with" }
+
+  dot { "." }
 }
 
 @detectDelim
