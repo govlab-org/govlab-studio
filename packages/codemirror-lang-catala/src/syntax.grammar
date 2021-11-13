@@ -1,0 +1,28 @@
+@dialects { catala_en }
+
+@top Program { expression* }
+
+@skip { space | LineComment }
+
+expression {
+  Boolean |
+  Identifier |
+  String |
+  Application { "(" expression* ")" }
+}
+
+Boolean { @specialize[@name=BooleanLiteral]<Identifier, "true" | "false"> }
+
+@tokens {
+  Identifier { $[a-zA-Z_\-0-9]+ }
+
+  String { '"' (!["\\] | "\\" _)* '"' }
+
+  LineComment { "#" ![\n]* }
+
+  space { $[ \t\n\r]+ }
+
+  "(" ")"
+}
+
+@detectDelim
