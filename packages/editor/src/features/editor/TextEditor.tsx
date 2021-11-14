@@ -1,9 +1,11 @@
 import * as React from 'react';
 import styles from './TextEditor.module.css';
-import { CatalaCell, setTextValue } from '../file/fileSlice';
-import { connect, ConnectedProps, useDispatch } from 'react-redux';
+import { CatalaCellText, setTextValue } from '../file/fileSlice';
+import { useDispatch } from 'react-redux';
 import { ReactEditor, Slate, withReact, Editable } from 'slate-react';
 import { BaseEditor, createEditor, Descendant, Editor, Element } from 'slate';
+import { useAppSelector } from '../../app/hooks';
+import { createSelector } from 'reselect';
 import { RootState } from '../../app/store';
 
 // https://docs.slatejs.org/concepts/12-typescript#defining-editor-element-and-text-types
@@ -13,20 +15,8 @@ declare module 'slate' {
   }
 }
 
-const mapState = (state: RootState) => ({
-  fileContent: state.file.content,
-});
-
-const mapDispatch = {
-};
-
-const connector = connect(mapState, mapDispatch);
-
-type PropsFromRedux = ConnectedProps<typeof connector>;
-
-type Props = PropsFromRedux & {
+type Props = {
   cellIndex: number;
-  lineNumberOffset: number;
 }
 
 class GutterLine {
@@ -74,6 +64,24 @@ const computeGutterLines = (editor: ReactEditor, nodes: Descendant[]) => {
   return lines;
 };
 
+const getLineNumberOffset = createSelector(
+  [
+    (state: RootState) => state.file.content,
+    (_, index: number) => index,
+  ],
+  (content, index) => content.slice(0, index).reduce(
+    (acc, c) => acc + c.text.numLines + c.code.numLines, 0
+  )
+);
+
+const getText = createSelector(
+  [
+    (state: RootState) => state.file.content,
+    (_, index: number) => index,
+  ],
+  (content, index) => content[index].text
+);
+
 const TextEditor = (props: Props) => {
 
   const renderElement = React.useCallback(({ attributes, children, element }) => {
@@ -98,7 +106,8 @@ const TextEditor = (props: Props) => {
   }, []);
   
   const dispatch = useDispatch();
-  const cell: CatalaCell = props.fileContent![props.cellIndex];
+  const text: CatalaCellText = useAppSelector((s) => getText(s, props.cellIndex));
+  const lineNumberOffset = useAppSelector((s) => getLineNumberOffset(s, props.cellIndex));
 
   // Workaround for a crash caused by hot reloading.
   // https://github.com/ianstormtaylor/slate/issues/4081#issuecomment-798779414
@@ -129,7 +138,7 @@ const TextEditor = (props: Props) => {
     }
   }
   
-  const value = cell.text.content;
+  const value = text.content;
   const initialGutterLines: Array<GutterLine> = [];
   const [gutterLines, setGutterLines] = React.useState(initialGutterLines);
 
@@ -158,7 +167,7 @@ const TextEditor = (props: Props) => {
             marginBottom: line.marginBottom + "px",
           }}>
           <div>
-            {props.lineNumberOffset + i + 1}
+            {lineNumberOffset + i + 1}
           </div>
         </div>
       )}
@@ -172,4 +181,4 @@ const TextEditor = (props: Props) => {
   );
 };
 
-export default connector(TextEditor);
+export default TextEditor;

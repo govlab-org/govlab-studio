@@ -1,32 +1,39 @@
-import { CatalaCell, setCodeValue } from "../file/fileSlice";
-import { connect, ConnectedProps } from "react-redux";
-import { RootState } from "../../app/store";
+import { CatalaCellCode, setCodeValue } from "../file/fileSlice";
 import { lineNumbers } from "@codemirror/gutter";
-import { useAppDispatch } from "../../app/hooks";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import CodeMirror from "@uiw/react-codemirror";
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { Catala } from "codemirror-lang-catala";
+import { createSelector } from "reselect";
+import { RootState } from "../../app/store";
 
-const mapState = (state: RootState) => ({
-  fileContent: state.file.content,
-});
-
-const mapDispatch = {
-};
-
-const connector = connect(mapState, mapDispatch);
-
-type PropsFromRedux = ConnectedProps<typeof connector>;
-
-type Props = PropsFromRedux & {
+type Props = {
   cellIndex: number;
-  lineNumberOffset: number;
 }
+
+const getLineNumberOffset = createSelector(
+  [
+    (state: RootState) => state.file.content,
+    (_, index: number) => index,
+  ],
+  (content, index) => content.slice(0, index).reduce(
+      (acc, c) => acc + c.text.numLines + c.code.numLines, 0
+    ) + content[index].text.numLines
+);
+
+const getCode = createSelector(
+  [
+    (state: RootState) => state.file.content,
+    (_, index: number) => index,
+  ],
+  (content, index) => content[index].code
+);
 
 const CodeEditor = (props: Props) => {
   const dispatch = useAppDispatch();
-  const cell: CatalaCell = props.fileContent![props.cellIndex];
+  const code: CatalaCellCode = useAppSelector((s) => getCode(s, props.cellIndex));
+  const lineNumberOffset = useAppSelector((s) => getLineNumberOffset(s, props.cellIndex));
 
   let theme = EditorView.theme({
     "&.cm-editor": {
@@ -56,14 +63,14 @@ const CodeEditor = (props: Props) => {
     theme,
     Catala(),
     lineNumbers({ formatNumber: (n: number, s: EditorState) =>
-      (n + props.lineNumberOffset).toString()
+      (n + lineNumberOffset).toString()
     }),
   ];
 
   return (
     <div style={{ marginTop: 10, marginBottom: 10 }}>
       <CodeMirror
-        value={cell?.code?.code}
+        value={code.code}
         onChange={(value, viewUpdate) => {
           dispatch(setCodeValue([props.cellIndex, value]));
         }}
@@ -73,5 +80,5 @@ const CodeEditor = (props: Props) => {
     </div>
   );
 }
-  
-export default connector(CodeEditor);
+
+export default CodeEditor;
