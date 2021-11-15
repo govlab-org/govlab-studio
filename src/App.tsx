@@ -6,20 +6,12 @@ import CodeEditor from './features/editor/CodeEditor'
 import { OpenFileButton } from './features/file/OpenFileButton'
 import { SaveFileButton } from './features/file/SaveFileButton'
 import { useAppSelector } from './app/hooks';
-import { CatalaCell, selectFileContent } from './features/file/fileSlice';
+import { RootState } from './app/store';
+
+const getNumCells = (state: RootState) => state.file.content.length;
 
 const App = () => {
-  const fileContent = useAppSelector(selectFileContent);
-  let offset = 0;
-  const lineOffsets: Array<[number, number]> = fileContent?.map((cell: CatalaCell) => {
-    const numTextLines = cell.text?.numLines ?? 0;
-    const numCodeLines = cell.code?.numLines ?? 0;
-    const values: [number, number] = [offset, offset + numTextLines];
-
-    offset += numTextLines + numCodeLines;
-
-    return values;
-  }) ?? [];
+  const numCells = useAppSelector(getNumCells);
 
   return (
     <div className="App">
@@ -41,10 +33,10 @@ const App = () => {
         </Toolbar>
       </AppBar>
       <div>
-        {fileContent?.map((cell: CatalaCell, i: number) =>
+        {[...Array(numCells)].map((v, i: number) =>
             <div key={i}>
-              <TextEditor cellIndex={i} lineNumberOffset={lineOffsets[i][0]} />
-              <CodeEditor cellIndex={i} lineNumberOffset={lineOffsets[i][1]} />
+              <TextEditor cellIndex={i} />
+              <CodeEditor cellIndex={i} />
             </div>
         )}
       </div>

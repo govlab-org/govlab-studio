@@ -1,5 +1,4 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit"
-import { RootState } from "../../app/store";
 import markdown from 'remark-parse';
 import slate from 'remark-slate';
 import { unified } from 'unified';
@@ -137,6 +136,16 @@ export const fileSlice = createSlice({
         numLines: computeTextNumLines(value),
       };
     },
+    setCodeValue: (state, action: PayloadAction<[number, string]>) => {
+      const value = action.payload[1];
+
+      state.status = FileStatus.CHANGED;
+
+      (state.content![action.payload[0]] as CatalaCell).code = {
+        code: value,
+        numLines: computeCodeNumLines(value),
+      };
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -156,10 +165,6 @@ export const fileSlice = createSlice({
   },
 });
 
-export const { setTextValue } = fileSlice.actions;
-
-export const selectFile = (state: RootState) => state.file as FileState;
-
-export const selectFileContent = (state: RootState) => state.file.content?.map((v) => v as CatalaCell);
+export const { setTextValue, setCodeValue } = fileSlice.actions;
 
 export default fileSlice.reducer;

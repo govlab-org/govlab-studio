@@ -1,25 +1,31 @@
 import { useEffect, useState } from "react";
 import Editor, { useMonaco } from "@monaco-editor/react";
 import { editor } from "monaco-editor";
-import { CatalaCell } from "../file/fileSlice";
-import { connect, ConnectedProps } from "react-redux";
 import { RootState } from "../../app/store";
+import { createSelector } from "reselect";
+import { useAppSelector } from "../../app/hooks";
 
-const mapState = (state: RootState) => ({
-  fileContent: state.file.content,
-});
-
-const mapDispatch = {
-};
-
-const connector = connect(mapState, mapDispatch);
-
-type PropsFromRedux = ConnectedProps<typeof connector>;
-
-type Props = PropsFromRedux & {
+type Props = {
   cellIndex: number;
-  lineNumberOffset: number;
 }
+
+const getLineNumberOffset = createSelector(
+  [
+    (state: RootState) => state.file.content,
+    (_, index: number) => index,
+  ],
+  (content, index) => content.slice(0, index).reduce(
+      (acc, c) => acc + c.text.numLines + c.code.numLines, 0
+    ) + content[index].text.numLines
+);
+
+const getCode = createSelector(
+  [
+    (state: RootState) => state.file.content,
+    (_, index: number) => index,
+  ],
+  (content, index) => content[index].code
+);
 
 const CodeEditor = (props: Props) => {
   const minHeight = 0;
@@ -124,21 +130,22 @@ const CodeEditor = (props: Props) => {
     setHeight(contentHeight);
   };
 
-  const cell: CatalaCell = props.fileContent![props.cellIndex];
+  const lineNumberOffset = useAppSelector(s => getLineNumberOffset(s, props.cellIndex));
+  const code = useAppSelector(s => getCode(s, props.cellIndex));
 
   return (
     <div style={{ marginTop: 20, marginBottom: 20 }}>
       <Editor
         height={height}
         language="catala_en"
-        value={cell?.code?.code}
+        value={code.code}
         theme="vs-dark"
         options={{
           fontSize: 15,
           fontFamily: "Roboto Mono, sans-serif",
           minimap: {enabled: false},
           overviewRulerLanes: 0,
-          lineNumbers: (lineNumber) => (props.lineNumberOffset + lineNumber).toString(),
+          lineNumbers: (lineNumber) => (lineNumberOffset + lineNumber).toString(),
           scrollBeyondLastLine: false,
           padding: {
             top: 20,
@@ -159,4 +166,4 @@ const CodeEditor = (props: Props) => {
   );
 }
   
-export default connector(CodeEditor);
+export default CodeEditor;
