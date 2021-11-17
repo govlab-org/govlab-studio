@@ -36,28 +36,32 @@ const computeGutterLines = (editor: ReactEditor, nodes: Descendant[]) => {
 
   for (let i = 0; i < nodes.length; ++i) {
     const node = nodes[i] as Element;
-    const element = ReactEditor.toDOMNode(editor, node);
-
-    if (!element) {
-      continue;
-    }
-    
-    const numLines = (element.textContent?.match(/\n/gm)?.length ?? 0) + 1;
-    const style = window.getComputedStyle(element);
-    const height = element.offsetHeight;
-    const marginBottom = parseFloat(style.marginBottom);
-    const marginTop = parseFloat(style.marginTop);
-
-    if (numLines === 1) {
-      lines.push(new GutterLine(marginTop, height, marginBottom));
-    } else {
-      lines.push(new GutterLine(marginTop, height / numLines, 0.));
-      if (numLines >= 3) {
-        lines = lines.concat(Array(numLines - 2).fill(
-          new GutterLine(0., height / numLines, 0.)
-        ));
+    try {
+      const element = ReactEditor.toDOMNode(editor, node);
+  
+      if (!element) {
+        continue;
       }
-      lines.push(new GutterLine(0., height / numLines, marginBottom));
+      
+      const numLines = (element.textContent?.match(/\n/gm)?.length ?? 0) + 1;
+      const style = window.getComputedStyle(element);
+      const height = element.offsetHeight;
+      const marginBottom = parseFloat(style.marginBottom);
+      const marginTop = parseFloat(style.marginTop);
+
+      if (numLines === 1) {
+        lines.push(new GutterLine(marginTop, height, marginBottom));
+      } else {
+        lines.push(new GutterLine(marginTop, height / numLines, 0.));
+        if (numLines >= 3) {
+          lines = lines.concat(Array(numLines - 2).fill(
+            new GutterLine(0., height / numLines, 0.)
+          ));
+        }
+        lines.push(new GutterLine(0., height / numLines, marginBottom));
+      }
+    } catch (e) {
+      // nothing
     }
   }
 
@@ -136,11 +140,14 @@ const TextEditor = (props: Props) => {
       event.preventDefault();
       event.stopPropagation();
     }
-  }
+  };
   
   const value = text.content;
   const initialGutterLines: Array<GutterLine> = [];
   const [gutterLines, setGutterLines] = React.useState(initialGutterLines);
+
+  // https://github.com/ianstormtaylor/slate/pull/4540#issuecomment-951380551
+  editor.children = value;
 
   React.useEffect(() => {
     setGutterLines(computeGutterLines(editor, value));
@@ -172,7 +179,7 @@ const TextEditor = (props: Props) => {
         </div>
       )}
       </div>
-      <div style={{flex: 1 }} className={styles.textEditor}>
+      <div style={{ flex: 1 }} className={styles.textEditor}>
         <Slate editor={editor} value={value} onChange={onChange}>
           <Editable renderElement={renderElement} onKeyPress={onKeyDown}/>
         </Slate>

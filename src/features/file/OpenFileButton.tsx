@@ -1,5 +1,5 @@
 import { Upload } from "@mui/icons-material";
-import { IconButton } from "@mui/material";
+import { Button } from "@mui/material";
 import { ChangeEvent, useRef } from "react";
 import { useAppDispatch } from "../../app/hooks";
 import { readFileAsync } from "./fileSlice";
@@ -26,8 +26,13 @@ export const OpenFileButton = (props: Props) => {
   }
 
   return (
-    <IconButton size="large" color="inherit" onClick={() => inputFile.current?.click()}>
-      <Upload />
+    <Button
+      onClick={() => inputFile.current?.click()}
+      style={{width: "100%"}}
+      variant="contained"
+      size="large"
+      startIcon={<Upload />}>
+      Open a file
       <input
         type='file'
         id='file'
@@ -36,6 +41,6 @@ export const OpenFileButton = (props: Props) => {
         accept={extensions.join(",")}
         onChange={onFileChanged}
       />
-    </IconButton>
+    </Button>
   );
 }

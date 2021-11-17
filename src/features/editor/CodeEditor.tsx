@@ -157,6 +157,7 @@ const CodeEditor = (props: Props) => {
           renderLineHighlight: "none",
         }}
         onMount={(editor) => {
+          updateHeight(editor);
           editor.onDidContentSizeChange(() => {
             updateHeight(editor);
           });
