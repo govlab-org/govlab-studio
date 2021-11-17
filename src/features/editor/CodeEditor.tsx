@@ -134,7 +134,7 @@ const CodeEditor = (props: Props) => {
   const code = useAppSelector(s => getCode(s, props.cellIndex));
 
   return (
-    <div style={{ marginTop: 20, marginBottom: 20 }}>
+    <div>
       <Editor
         height={height}
         language="catala_en"
