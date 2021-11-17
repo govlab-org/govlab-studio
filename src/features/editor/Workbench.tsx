@@ -2,13 +2,13 @@ import { RootState } from '../../app/store';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import TextEditor from './TextEditor'
 import CodeEditor from './CodeEditor'
-import { Button, Paper, Typography } from '@mui/material';
+import { Paper, Typography } from '@mui/material';
 import { OpenFileButton } from '../file/OpenFileButton';
+import { CreateNewFileButton } from '../file/CreateNewFileButton';
 import { Box } from '@mui/system';
 import Grid from '@mui/material/Grid';
 import DialMenu from './DialMenu';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
-import { createNewFile, setCurrentCellIndex } from '../file/fileSlice';
+import { setCurrentCellIndex } from '../file/fileSlice';
 import { createSelector } from 'reselect';
 
 interface Props {
@@ -42,14 +42,7 @@ const Workbench = (props: Props) => {
                     </Box>
                   </Grid>
                   <Grid item md={5} sm={12}>
-                    <Button
-                      style={{width: "100%"}}
-                      variant="outlined"
-                      size="large"
-                      startIcon={<AddCircleIcon />}
-                      onClick={() => dispatch(createNewFile())}>
-                        Create a new file
-                    </Button>
+                    <CreateNewFileButton />
                   </Grid>
                 </Grid>
               </Box>
