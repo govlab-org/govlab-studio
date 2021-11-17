@@ -56,9 +56,7 @@ const Workbench = (props: Props) => {
             </Paper>
           </Grid>
         </Grid>
-        <DialMenu />
       </Box>
-
     );
   } else {
     return (
