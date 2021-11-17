@@ -5,6 +5,7 @@ import { unified } from 'unified';
 import { Descendant, Element, Node, Text } from "slate";
 
 export enum FileStatus {
+  NOT_LOADED,
   LOADING,
   LOADED,
   CHANGED,
@@ -34,7 +35,7 @@ export interface CatalaCellCode {
 }
 
 const initialState: FileState = {
-  status: undefined,
+  status: FileStatus.NOT_LOADED,
   currentCellindex: 0,
   name: "",
   content: [],
@@ -140,6 +141,7 @@ export const fileSlice = createSlice({
   reducers: {
     createNewFile: (state) => {
       state.content = [createEmptyCell()];
+      state.status = FileStatus.LOADED;
     },
     setCurrentCellIndex: (state, action: PayloadAction<number>) => {
       state.currentCellindex = action.payload;

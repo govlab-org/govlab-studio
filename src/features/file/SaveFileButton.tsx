@@ -31,6 +31,12 @@ export const SaveFileButton = (props: Props) => {
     saveAs(data, file.name ?? "");
   };
 
+  if (file.status === FileStatus.NOT_LOADED) {
+    return (
+      <div></div>
+    );
+  }
+
   const enabled = file.status === FileStatus.CHANGED;
 
   return (

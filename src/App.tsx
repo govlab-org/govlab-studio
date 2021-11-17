@@ -2,6 +2,7 @@ import './App.css';
 import { AppBar, Toolbar, Typography } from '@mui/material';
 import { Box } from '@mui/system';
 import Workbench from './features/editor/Workbench'
+import { SaveFileButton } from './features/file/SaveFileButton';
 
 const App = () => {
   return (
@@ -17,6 +18,9 @@ const App = () => {
             GovLab Studio
           </Typography>
           <Box sx={{ flexGrow: 1 }} />
+          <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
+            <SaveFileButton />
+          </Box>
         </Toolbar>
       </AppBar>
       <Workbench />
