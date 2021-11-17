@@ -155,7 +155,7 @@ export const fileSlice = createSlice({
       state.content = [
         ...state.content.slice(0, state.currentCellindex + 1),
         createEmptyCell(),
-        ...state.content.slice(state.currentCellindex),
+        ...state.content.slice(state.currentCellindex + 1),
       ];
       state.currentCellindex += 1;
     },
