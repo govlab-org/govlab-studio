@@ -16,6 +16,7 @@ import { css } from '@emotion/css';
       lookbehind: true,
       greedy: true,
     },
+    operator: /[-+%=]=?|!=|:=|\*\*?=?|\/\/?=?|<[<=>]?|>[=>]?|[&|^~]/,
     keyword: /\b(?:_(?=\s*:)|match|with\s+pattern|fixed|by|decreasing|increasing|varies|with|we\s+have|in|such\s+that|exists|for|all|of|if|then|else|initial|scope|depends\s+on|declaration|includes|collection|content|optional|structure|enumeration|context|rule|under\s+condition|condition|data|consequence|fulfilled|equals|assertion|definition|label|exception)\b/,
   };
 }());
@@ -31,18 +32,55 @@ type Props = {
 }
 
 class GutterLine {
-  marginTop: number = 0;
-  height: number = 0;
-  marginBottom: number = 0;
-  isCode: boolean = false;
-
-  constructor(marginTop: number, height: number, marginBottom: number, isCode: boolean) {
-    this.marginTop = marginTop;
-    this.height = height;
-    this.marginBottom = marginBottom;
-    this.isCode = isCode;
-  }
+  style: React.CSSProperties = {};
+  classNames: string[] = [];
 }
+
+const computeGutterLines = (editor: ReactEditor, nodes: Descendant[]) => {
+  let lines: Array<GutterLine> = [];
+
+  for (let i = 0; i < nodes.length; ++i) {
+    const node = nodes[i] as Element;
+
+    try {
+      const element = ReactEditor.toDOMNode(editor, node);
+  
+      if (!element) {
+        continue;
+      }
+      
+      const numLines = (element.textContent?.match(/\n/gm)?.length ?? 0) + 1;
+      const style = window.getComputedStyle(element);
+      const marginBottom = style.marginBottom;
+      const marginTop = style.marginTop;
+      const paddingBottom = style.paddingBottom;
+      const paddingTop = style.paddingTop;
+      const height = parseFloat(style.getPropertyValue("height")) / numLines;
+      const classNames = [styles.lineNumber];
+
+      if (element.tagName === "CODE") {
+        classNames.push(styles.codeLineNumber);
+      }
+
+      if (numLines === 1) {
+        lines.push({style: {marginTop, marginBottom, paddingTop, paddingBottom, height}, classNames});
+      } else {
+        lines.push({style: {marginTop, paddingTop, height}, classNames});
+        if (numLines >= 3) {
+          lines = lines.concat(Array(numLines - 2).fill(
+            {style: {height}, classNames}
+          ));
+        }
+        lines.push({style: {marginBottom, paddingBottom, height}, classNames});
+      }
+    } catch (e) {
+      // nothing
+    }
+  }
+
+  return lines;
+};
+
 
 const decorateCode = function([node, path]: NodeEntry): Range[] {
   const ranges: Range[] = [];
@@ -85,45 +123,6 @@ const decorateCode = function([node, path]: NodeEntry): Range[] {
   return ranges;
 }
 
-const computeGutterLines = (editor: ReactEditor, nodes: Descendant[]) => {
-  let lines: Array<GutterLine> = [];
-
-  for (let i = 0; i < nodes.length; ++i) {
-    const node = nodes[i] as Element;
-
-    try {
-      const element = ReactEditor.toDOMNode(editor, node);
-  
-      if (!element) {
-        continue;
-      }
-      
-      const numLines = (element.textContent?.match(/\n/gm)?.length ?? 0) + 1;
-      const style = window.getComputedStyle(element);
-      const height = element.offsetHeight;
-      const marginBottom = parseFloat(style.marginBottom);
-      const marginTop = parseFloat(style.marginTop);
-      const isCode = element.tagName === "CODE";
-
-      if (numLines === 1) {
-        lines.push(new GutterLine(marginTop, height, marginBottom, isCode));
-      } else {
-        lines.push(new GutterLine(marginTop, height / numLines, 0., isCode));
-        if (numLines >= 3) {
-          lines = lines.concat(Array(numLines - 2).fill(
-            new GutterLine(0., height / numLines, 0., isCode)
-          ));
-        }
-        lines.push(new GutterLine(0., height / numLines, marginBottom, isCode));
-      }
-    } catch (e) {
-      // nothing
-    }
-  }
-
-  return lines;
-};
-
 const CatalaEditor = (props: Props) => {
 
   const renderElement = React.useCallback(({ attributes, children, element }) => {
@@ -161,6 +160,10 @@ const CatalaEditor = (props: Props) => {
           ${leaf.keyword &&
             css`
               color: #07a;
+          `}
+          ${leaf.operator &&
+            css`
+              color: #3af;
           `}
         `}
       >
@@ -225,15 +228,14 @@ const CatalaEditor = (props: Props) => {
     <div style={{ display: 'flex' }}>
       <div>
       {gutterLines.map((line, i) =>
-        <div key={i} className={[styles.lineNumbers, line.isCode ? styles.codeLineNumbers : ""].join(" ")} style={{
-            marginTop: line.marginTop + "px",
-            height: line.height + "px",
-            lineHeight: line.height + "px",
-            marginBottom: line.marginBottom + "px",
-          }}>
-          <div>
+        <div
+          key={i}
+          className={line.classNames.join(" ")}
+          style={line.style}
+        >
+          <span>
             {i + 1}
-          </div>
+          </span>
         </div>
       )}
       </div>
