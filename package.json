@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@accordproject/markdown-slate": "^0.14.1",
+    "@emotion/css": "^11.7.1",
     "@emotion/react": "^11.6.0",
     "@emotion/styled": "^11.6.0",
     "@monaco-editor/react": "^4.3.1",
@@ -14,8 +15,9 @@
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.5.0",
     "@testing-library/user-event": "^7.2.1",
+    "@types/prismjs": "^1.16.6",
     "file-saver": "^2.0.5",
-    "monaco-editor": "^0.29.1",
+    "prismjs": "^1.25.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-redux": "^7.2.6",

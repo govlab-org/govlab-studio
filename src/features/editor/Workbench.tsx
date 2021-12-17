@@ -1,29 +1,21 @@
 import { RootState } from '../../app/store';
-import { useAppDispatch, useAppSelector } from '../../app/hooks';
-import TextEditor from './TextEditor'
-import CodeEditor from './CodeEditor'
+import { useAppSelector } from '../../app/hooks';
 import { Paper, Typography } from '@mui/material';
 import { OpenFileButton } from '../file/OpenFileButton';
 import { CreateNewFileButton } from '../file/CreateNewFileButton';
 import { Box } from '@mui/system';
 import Grid from '@mui/material/Grid';
 import DialMenu from './DialMenu';
-import { setCurrentCellIndex } from '../file/fileSlice';
-import { createSelector } from 'reselect';
+import CatalaEditor from './CatalaEditor';
+import { FileStatus } from '../file/fileSlice';
 
 interface Props {
 }
 
-const getNumCells = createSelector(
-  (state: RootState) => state.file.content,
-  (content) => content.length,
-);
-
 const Workbench = (props: Props) => {
-  const dispatch = useAppDispatch();
-  const numCells = useAppSelector(getNumCells);
+  const fileStatus = useAppSelector((state: RootState) => state.file.status);
 
-  if (numCells === 0) {
+  if (fileStatus === FileStatus.NOT_LOADED) {
     return (
       <Box sx={{ flexGrow: 1 }}>
         <Grid container justifyContent="center" alignItems="center">
@@ -54,13 +46,8 @@ const Workbench = (props: Props) => {
   } else {
     return (
       <div>
-      {[...Array(numCells)].map((v, i: number) =>
-        <div key={i} onClick={() => dispatch(setCurrentCellIndex(i))}>
-          <TextEditor cellIndex={i} />
-          <CodeEditor cellIndex={i} />
-        </div>
-      )}
-      <DialMenu />
+        <CatalaEditor />
+        <DialMenu />
       </div>
     );
   }

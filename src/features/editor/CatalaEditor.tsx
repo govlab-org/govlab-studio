@@ -1,12 +1,24 @@
 import * as React from 'react';
-import styles from './TextEditor.module.css';
-import { CatalaCellText, setTextValue } from '../file/fileSlice';
+import styles from './CatalaEditor.module.css';
+import { setFileContent } from '../file/fileSlice';
 import { useDispatch } from 'react-redux';
 import { ReactEditor, Slate, withReact, Editable } from 'slate-react';
-import { BaseEditor, createEditor, Descendant, Editor, Element } from 'slate';
+import { BaseEditor, createEditor, Descendant, Editor, Element, NodeEntry, Range } from 'slate';
 import { useAppSelector } from '../../app/hooks';
-import { createSelector } from 'reselect';
 import { RootState } from '../../app/store';
+import Prism from 'prismjs';
+import { css } from '@emotion/css';
+
+(function() {
+  Prism.languages.catala_en = {
+    comment: {
+      pattern: /(^|[^\\])#.*/,
+      lookbehind: true,
+      greedy: true,
+    },
+    keyword: /\b(?:_(?=\s*:)|match|with\s+pattern|fixed|by|decreasing|increasing|varies|with|we\s+have|in|such\s+that|exists|for|all|of|if|then|else|initial|scope|depends\s+on|declaration|includes|collection|content|optional|structure|enumeration|context|rule|under\s+condition|condition|data|consequence|fulfilled|equals|assertion|definition|label|exception)\b/,
+  };
+}());
 
 // https://docs.slatejs.org/concepts/12-typescript#defining-editor-element-and-text-types
 declare module 'slate' {
@@ -16,19 +28,61 @@ declare module 'slate' {
 }
 
 type Props = {
-  cellIndex: number;
 }
 
 class GutterLine {
   marginTop: number = 0;
   height: number = 0;
   marginBottom: number = 0;
+  isCode: boolean = false;
 
-  constructor(marginTop: number, height: number, marginBottom: number) {
+  constructor(marginTop: number, height: number, marginBottom: number, isCode: boolean) {
     this.marginTop = marginTop;
     this.height = height;
     this.marginBottom = marginBottom;
+    this.isCode = isCode;
   }
+}
+
+const decorateCode = function([node, path]: NodeEntry): Range[] {
+  const ranges: Range[] = [];
+
+  if ((node as any).type !== 'code_block') {
+    return ranges;
+  }
+
+  const getLength = (token: string | Prism.Token): number => {
+    if (typeof token === 'string') {
+      return token.length;
+    } else if (typeof token.content === 'string') {
+      return token.content.length;
+    } else {
+      return (token.content as (string | Prism.Token)[]).reduce((l, t) => l + getLength(t), 0);
+    }
+  };
+
+  let child = (node as any).children[0];
+  let childPath = path.concat(0);
+
+  const tokens = Prism.tokenize(child.text, Prism.languages.catala_en);
+  let start = 0;
+
+  for (const token of tokens) {
+    const length = getLength(token);
+    const end = start + length;
+
+    if (typeof token !== 'string') {
+      ranges.push({
+        [token.type]: true,
+        anchor: { path: childPath, offset: start },
+        focus: { path: childPath, offset: end },
+      });
+    }
+
+    start = end;
+  }
+
+  return ranges;
 }
 
 const computeGutterLines = (editor: ReactEditor, nodes: Descendant[]) => {
@@ -36,6 +90,7 @@ const computeGutterLines = (editor: ReactEditor, nodes: Descendant[]) => {
 
   for (let i = 0; i < nodes.length; ++i) {
     const node = nodes[i] as Element;
+
     try {
       const element = ReactEditor.toDOMNode(editor, node);
   
@@ -48,17 +103,18 @@ const computeGutterLines = (editor: ReactEditor, nodes: Descendant[]) => {
       const height = element.offsetHeight;
       const marginBottom = parseFloat(style.marginBottom);
       const marginTop = parseFloat(style.marginTop);
+      const isCode = element.tagName === "CODE";
 
       if (numLines === 1) {
-        lines.push(new GutterLine(marginTop, height, marginBottom));
+        lines.push(new GutterLine(marginTop, height, marginBottom, isCode));
       } else {
-        lines.push(new GutterLine(marginTop, height / numLines, 0.));
+        lines.push(new GutterLine(marginTop, height / numLines, 0., isCode));
         if (numLines >= 3) {
           lines = lines.concat(Array(numLines - 2).fill(
-            new GutterLine(0., height / numLines, 0.)
+            new GutterLine(0., height / numLines, 0., isCode)
           ));
         }
-        lines.push(new GutterLine(0., height / numLines, marginBottom));
+        lines.push(new GutterLine(0., height / numLines, marginBottom, isCode));
       }
     } catch (e) {
       // nothing
@@ -68,25 +124,7 @@ const computeGutterLines = (editor: ReactEditor, nodes: Descendant[]) => {
   return lines;
 };
 
-const getLineNumberOffset = createSelector(
-  [
-    (state: RootState) => state.file.content,
-    (_, index: number) => index,
-  ],
-  (content, index) => content.slice(0, index).reduce(
-    (acc, c) => acc + c.text.numLines + c.code.numLines, 0
-  )
-);
-
-const getText = createSelector(
-  [
-    (state: RootState) => state.file.content,
-    (_, index: number) => index,
-  ],
-  (content, index) => content[index].text
-);
-
-const TextEditor = (props: Props) => {
+const CatalaEditor = (props: Props) => {
 
   const renderElement = React.useCallback(({ attributes, children, element }) => {
     switch (element.type) {
@@ -104,22 +142,32 @@ const TextEditor = (props: Props) => {
         return <h6 {...attributes}>{children}</h6>;  
       case 'block_quote':
         return <blockquote {...attributes}>{children}</blockquote>;  
+      case 'code_block':
+        return <code {...attributes}>{children}</code>;  
       default:
         return <p {...attributes}>{children}</p>;
     }
   }, []);
-  
-  const dispatch = useDispatch();
-  const text: CatalaCellText = useAppSelector((s) => getText(s, props.cellIndex));
-  const lineNumberOffset = useAppSelector((s) => getLineNumberOffset(s, props.cellIndex));
 
-  // Workaround for a crash caused by hot reloading.
-  // https://github.com/ianstormtaylor/slate/issues/4081#issuecomment-798779414
-  const editorRef = React.useRef<Editor>();
-  if (!editorRef.current) {
-    editorRef.current = withReact(createEditor());
-  }
-  const editor = editorRef.current;
+  const renderLeaf = React.useCallback(({ attributes, children, leaf }) => {
+    return (
+      <span
+        {...attributes}
+        className={css`
+          ${leaf.comment &&
+            css`
+              color: slategray;
+          `}
+          ${leaf.keyword &&
+            css`
+              color: #07a;
+          `}
+        `}
+      >
+        {children}
+      </span>
+    )
+  }, []);
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     // Handle soft breaks (shift + enter)
@@ -142,7 +190,17 @@ const TextEditor = (props: Props) => {
     }
   };
   
-  const value = text.content;
+  const dispatch = useDispatch();
+  const value = useAppSelector((state: RootState) => state.file.content);
+
+  // Workaround for a crash caused by hot reloading.
+  // https://github.com/ianstormtaylor/slate/issues/4081#issuecomment-798779414
+  const editorRef = React.useRef<Editor>();
+  if (!editorRef.current) {
+    editorRef.current = withReact(createEditor());
+  }
+  const editor = editorRef.current;
+  
   const initialGutterLines: Array<GutterLine> = [];
   const [gutterLines, setGutterLines] = React.useState(initialGutterLines);
 
@@ -159,33 +217,38 @@ const TextEditor = (props: Props) => {
     const ops = editor.operations.filter(op => op && op.type !== 'set_selection');
     
     if (ops && Array.isArray(ops) && ops.length > 0) {
-      dispatch(setTextValue([props.cellIndex, v]));
+        dispatch(setFileContent(v));
     }
-  }, [dispatch, editor.operations, props.cellIndex]);
+  }, [dispatch, editor.operations]);
 
   return (
     <div style={{ display: 'flex' }}>
-      <div style={{ width: 68 }}>
+      <div>
       {gutterLines.map((line, i) =>
-        <div key={i} className={styles.lineNumbers} style={{
+        <div key={i} className={[styles.lineNumbers, line.isCode ? styles.codeLineNumbers : ""].join(" ")} style={{
             marginTop: line.marginTop + "px",
             height: line.height + "px",
             lineHeight: line.height + "px",
             marginBottom: line.marginBottom + "px",
           }}>
           <div>
-            {lineNumberOffset + i + 1}
+            {i + 1}
           </div>
         </div>
       )}
       </div>
-      <div style={{ flex: 1 }} className={styles.textEditor}>
+      <div style={{ flex: 1 }} className={styles.catalaEditor}>
         <Slate editor={editor} value={value} onChange={onChange}>
-          <Editable renderElement={renderElement} onKeyPress={onKeyDown}/>
+          <Editable
+            renderElement={renderElement}
+            renderLeaf={renderLeaf}
+            onKeyPress={onKeyDown}
+            decorate={decorateCode}
+          />
         </Slate>
       </div>
     </div>
   );
 };
 
-export default TextEditor;
+export default CatalaEditor;

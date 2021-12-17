@@ -1,25 +1,21 @@
-import { SpeedDial, SpeedDialAction, SpeedDialIcon } from "@mui/material";
-import FlipIcon from '@mui/icons-material/Flip';
-import { useAppDispatch } from '../../app/hooks';
-import { addCellAbove, addCellBellow } from "../file/fileSlice";
+import { SpeedDial, SpeedDialIcon } from "@mui/material";
 
 interface Props {
 }
 
 const DialMenu = (props: Props) => {
-  const dispatch = useAppDispatch();
-  const actions = [
-    {
-      icon: <FlipIcon sx={{transform: "rotate(90deg)"}} />,
-      name: 'Add cell below',
-      onClick: () => dispatch(addCellBellow()),
-    },
-    {
-      icon: <FlipIcon sx={{transform: "rotate(-90deg)"}} />,
-      name: 'Add cell above',
-      onClick: () => dispatch(addCellAbove()),
-    },
-  ];
+  // const actions = [
+    // {
+    //   icon: <FlipIcon sx={{transform: "rotate(90deg)"}} />,
+    //   name: 'Add cell below',
+    //   onClick: () => (),
+    // },
+    // {
+    //   icon: <FlipIcon sx={{transform: "rotate(-90deg)"}} />,
+    //   name: 'Add cell above',
+    //   onClick: () => dispatch(addCellAbove()),
+    // },
+  // ];
 
   return (
     <SpeedDial
@@ -31,14 +27,14 @@ const DialMenu = (props: Props) => {
       }}
       icon={<SpeedDialIcon />}
     >
-      {actions.map((action) => (
+      {/* {actions.map((action) => (
         <SpeedDialAction
           key={action.name}
           icon={action.icon}
           tooltipTitle={action.name}
           onClick={action.onClick}
         />
-      ))}
+      ))} */}
     </SpeedDial>
   );
 }

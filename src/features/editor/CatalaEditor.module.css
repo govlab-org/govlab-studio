@@ -1,0 +1,33 @@
+.lineNumbers {
+    padding-right: 20px;
+    width: 65px;
+    text-align: right;
+    box-sizing: border-box;
+}
+
+.codeLineNumbers {
+    background-color: #222;
+}
+
+.lineNumbers div {
+    -webkit-text-size-adjust: 100%;
+    font-variant-numeric: tabular-nums;
+    font-family: "Roboto Mono", sans-serif;
+    font-weight: normal;
+    cursor: default;
+    letter-spacing: 0px;
+    font-size: 15px;
+    vertical-align: middle;
+    color: #858585;
+}
+
+.catalaEditor {
+    font-family: "Roboto Slab", serif;
+}
+
+.catalaEditor code {
+    display: block;
+    background-color: #222;
+    color: white;
+    font-family: "Roboto Mono", sans-serif;
+}
